@@ -1,14 +1,17 @@
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
-  // Disable command buffering when DB connection is pending/failed
-  mongoose.set('bufferCommands', false);
+  let uri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/personalized_learning_db';
+  
+  // Defensive: Strip accidental < > placeholder brackets around password if present
+  uri = uri.replace(/:<([^>@]+)>/, ':$1');
 
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/personalized_learning_db', {
-      serverSelectionTimeoutMS: 2000 // 2 seconds timeout instead of 10s default
+    const isCloud = uri.includes('mongodb+srv') || uri.includes('mongodb.net');
+    const conn = await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: isCloud ? 8000 : 2500
     });
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    console.log(`✅ MongoDB Connected successfully: ${conn.connection.host}`);
   } catch (error) {
     console.error(`MongoDB Notice: ${error.message}`);
     console.log('⚡ Running in In-Memory Demo mode (Full functionality active without requiring local MongoDB daemon).');
